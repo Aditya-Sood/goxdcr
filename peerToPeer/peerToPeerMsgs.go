@@ -2090,8 +2090,9 @@ func (b *BackfillDelResponse) DeSerialize(stream []byte) error {
 type SourceHeartbeatReq struct {
 	RequestCommon
 
-	SpecsCompressed []byte
-	specs           []*metadata.ReplicationSpecification
+	SourceClusterUUID string
+	SpecsCompressed   []byte
+	specs             []*metadata.ReplicationSpecification
 }
 
 func NewSourceHeartbeatReq(common RequestCommon) *SourceHeartbeatReq {
@@ -2102,6 +2103,10 @@ func NewSourceHeartbeatReq(common RequestCommon) *SourceHeartbeatReq {
 
 func (s *SourceHeartbeatReq) AppendSpec(spec *metadata.ReplicationSpecification) {
 	s.specs = append(s.specs, spec)
+}
+
+func (s *SourceHeartbeatReq) SetUUID(uuid string) {
+	s.SourceClusterUUID = uuid
 }
 
 func (s *SourceHeartbeatReq) Serialize() ([]byte, error) {
@@ -2139,6 +2144,10 @@ func (s *SourceHeartbeatReq) SameAs(otherRaw interface{}) (bool, error) {
 
 	// Ignore compressed payload because it's mostly used for serialization
 
+	if s.SourceClusterUUID != other.SourceClusterUUID {
+		return false, nil
+	}
+
 	if len(s.specs) != len(other.specs) {
 		return false, nil
 	}
@@ -2163,6 +2172,8 @@ func (s *SourceHeartbeatReq) GenerateResponse() interface{} {
 
 type SourceHeartbeatResp struct {
 	ResponseCommon
+
+	TargetClusterUUID string
 }
 
 func (s *SourceHeartbeatResp) Serialize() ([]byte, error) {

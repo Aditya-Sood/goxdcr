@@ -63,6 +63,7 @@ const DocsPath = "/docs/"
 const CollectionsManifestPath = "/scopes"
 const ScopesPath = "/scopes/"
 const CollectionsPath = "/collections/"
+const TerseClusterInfoPath = "/pools/default/terseClusterInfo"
 
 // Streaming API paths. They are used for source clusters only
 const ObservePoolPath = "/poolsStreaming/default"
@@ -116,6 +117,8 @@ var DeveloperPreviewKey = "isDeveloperPreview"
 var StatusKey = "status"
 var NumberOfReplicas = "numReplicas"
 var StorageBackendKey = "storageBackend"
+var OrchestratorNodeKey = "orchestrator"
+var OtpNodeKey = "otpNode"
 
 // Value for StorageBackendKey
 var Magma = "magma"

@@ -1,10 +1,11 @@
 package peerToPeer
 
 import (
-	"github.com/couchbase/goxdcr/log"
-	"github.com/couchbase/goxdcr/service_def"
 	"strings"
 	"time"
+
+	"github.com/couchbase/goxdcr/v8/log"
+	"github.com/couchbase/goxdcr/v8/service_def"
 )
 
 type SrcHeartbeatHandler struct {
@@ -74,7 +75,7 @@ func (s *SrcHeartbeatHandler) handleRequest(req *SourceHeartbeatReq) {
 		return
 	}
 
-	s.logger.Infof("NEIL DEBUG peer addresses %v sender %v", peers, req.GetSender())
+	s.logger.Infof("peer addresses %v sender %v", peers, req.GetSender())
 
 	// Only respond if I am the proxy node
 	resp := req.GenerateResponse().(*SourceHeartbeatResp)

@@ -1801,3 +1801,5 @@ var CasPoisoningPreCheckEnabled int = 0
 func IsCasPoisoningPreCheckEnabled() bool {
 	return CasPoisoningPreCheckEnabled > 0
 }
+
+var SrcHeartbeatExpirationTimeout = 5 * time.Minute

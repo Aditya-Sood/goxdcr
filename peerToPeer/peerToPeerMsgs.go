@@ -2102,16 +2102,29 @@ type SourceHeartbeatReq struct {
 	RequestCommon
 
 	SourceClusterUUID string
-	SpecsCompressed   []byte
 	NodesList         []string
+	ProxyMode         bool // ProxyMode is set when the receiver node needs to forward the request to its peers
 
-	specs []*metadata.ReplicationSpecification
+	specs []*metadata.ReplicationSpecification // Use this but not meant for over the wire
+
+	SpecsCompressed []byte // No need to touch as this is populated as part of Serialize
 }
 
 func NewSourceHeartbeatReq(common RequestCommon) *SourceHeartbeatReq {
-	req := &SourceHeartbeatReq{RequestCommon: common}
+	req := &SourceHeartbeatReq{
+		RequestCommon: common,
+		ProxyMode:     true,
+	}
 	req.ReqType = ReqSrcHeartbeat
 	return req
+}
+
+func (s *SourceHeartbeatReq) LoadFromTemplate(orig *SourceHeartbeatReq) *SourceHeartbeatReq {
+	s.SourceClusterUUID = orig.SourceClusterUUID
+	s.specs = orig.specs
+	s.NodesList = orig.NodesList
+	s.ProxyMode = orig.ProxyMode
+	return s
 }
 
 func (s *SourceHeartbeatReq) AppendSpec(spec *metadata.ReplicationSpecification) {
@@ -2120,6 +2133,11 @@ func (s *SourceHeartbeatReq) AppendSpec(spec *metadata.ReplicationSpecification)
 
 func (s *SourceHeartbeatReq) SetUUID(uuid string) *SourceHeartbeatReq {
 	s.SourceClusterUUID = uuid
+	return s
+}
+
+func (s *SourceHeartbeatReq) DisableProxyMode() *SourceHeartbeatReq {
+	s.ProxyMode = false
 	return s
 }
 

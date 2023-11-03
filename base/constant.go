@@ -1299,7 +1299,8 @@ func InitConstants(topologyChangeCheckInterval time.Duration, maxTopologyChangeC
 	P2PRetryWaitTimeMilliSec time.Duration,
 	p2pManifestsGetterSleepTimeSecs int, p2pManifestsGetterMaxRetry int,
 	datapoolLogFrequency int, capellaHostNameSuffix string,
-	nwLatencyToleranceMilliSec time.Duration, casPoisoningPreCheckEnabled int) {
+	nwLatencyToleranceMilliSec time.Duration, casPoisoningPreCheckEnabled int,
+	srcHeartbeatExpiration time.Duration, srcHeartbeatCooldownSecs time.Duration) {
 	TopologyChangeCheckInterval = topologyChangeCheckInterval
 	MaxTopologyChangeCountBeforeRestart = maxTopologyChangeCountBeforeRestart
 	MaxTopologyStableCountBeforeRestart = maxTopologyStableCountBeforeRestart
@@ -1458,6 +1459,8 @@ func InitConstants(topologyChangeCheckInterval time.Duration, maxTopologyChangeC
 	CapellaHostnameSuffix = capellaHostNameSuffix
 	NWLatencyToleranceMilliSec = nwLatencyToleranceMilliSec
 	CasPoisoningPreCheckEnabled = casPoisoningPreCheckEnabled
+	SrcHeartbeatExpirationTimeout = srcHeartbeatExpiration
+	SrcHeartbeatCooldownPeriod = srcHeartbeatCooldownSecs
 }
 
 // XDCR Dev hidden replication settings
@@ -1803,5 +1806,6 @@ func IsCasPoisoningPreCheckEnabled() bool {
 }
 
 var SrcHeartbeatExpirationTimeout = 5 * time.Minute
+var SrcHeartbeatCooldownPeriod = 30 * time.Second
 
 const XDCRSourceClustersPath = XDCRPrefix + "/sourceClusters"

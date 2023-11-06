@@ -2170,6 +2170,10 @@ func (s *SourceHeartbeatReq) DeSerialize(stream []byte) error {
 		return err
 	}
 
+	for _, spec := range s.specs {
+		spec.Settings.PostProcessAfterUnmarshalling()
+	}
+
 	return nil
 }
 

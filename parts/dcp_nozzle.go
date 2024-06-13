@@ -39,7 +39,7 @@ const (
 	// start settings key name
 	DCP_VBTimestamp         = "VBTimestamps"
 	DCP_VBTimestampUpdater  = "VBTimestampUpdater"
-	DCP_Connection_Prefix   = "xdcr:"
+	DCP_CONN_NAME_PREFIX    = "xdcr:"
 	EVENT_DCP_DISPATCH_TIME = "dcp_dispatch_time"
 	EVENT_DCP_DATACH_LEN    = "dcp_datach_length"
 	DCP_Stats_Interval      = "stats_interval"
@@ -300,6 +300,7 @@ type DcpNozzle struct {
 	// immutable fields
 	sourceBucketName string
 	targetBucketName string
+	connectionName   string // DCP connection name set by the nozzle
 	client           mcc.ClientIface
 	lock_client      sync.Mutex // lock to avoid client connection leak
 	uprFeed          mcc.UprFeedIface
@@ -555,12 +556,12 @@ func (dcp *DcpNozzle) initializeUprFeed() error {
 		return err
 	}
 
-	uprFeedName := DCP_Connection_Prefix + dcp.Id() + ":" + randName
-	if len(uprFeedName) > base.MaxDcpConnectionNameLength {
+	dcp.connectionName = DCP_CONN_NAME_PREFIX + dcp.Id() + ":" + randName
+	if len(dcp.connectionName) > base.MaxDcpConnectionNameLength {
 		// dcp.Id() looks like dcp_65713400edc789b05d26283428a2af88/B1/B2_127.0.0.1:12000_0
-		// and it contains two bucket names up to 100 bytes each. That's the part we will trim so the uprFeedName will be under limit
-		// The uprFeedName will still be unique because of the randName part
-		trimLen := len(uprFeedName) - base.MaxDcpConnectionNameLength
+		// and it contains two bucket names up to 100 bytes each. That's the part we will trim so that
+		// the dcp.connectionName will be under limit. It will still be unique because of the randName part.
+		trimLen := len(dcp.connectionName) - base.MaxDcpConnectionNameLength
 		id := dcp.Id()
 		index := strings.LastIndexByte(id, '/')
 		var idPart string
@@ -572,12 +573,12 @@ func (dcp *DcpNozzle) initializeUprFeed() error {
 			idLen := len(id) - trimLen
 			idPart = string(id[:idLen])
 		}
-		uprFeedName = DCP_Connection_Prefix + idPart + ":" + randName
+		dcp.connectionName = DCP_CONN_NAME_PREFIX + idPart + ":" + randName
 	}
 
 	if dcp.is_capi {
 		// no need to enable features for capi replication
-		err = dcp.uprFeed.UprOpen(uprFeedName, uint32(0), base.UprFeedBufferSize)
+		err = dcp.uprFeed.UprOpen(dcp.connectionName, uint32(0), base.UprFeedBufferSize)
 	} else {
 		var uprFeatures mcc.UprFeatures
 		// always enable xattr for xmem replication
@@ -595,7 +596,7 @@ func (dcp *DcpNozzle) initializeUprFeed() error {
 			err = fmt.Errorf("%v uprfeed is nil\n", dcp.Id())
 			return err
 		}
-		featuresErr, activatedFeatures := dcp.uprFeed.UprOpenWithFeatures(uprFeedName, uint32(0) /*seqno*/, base.UprFeedBufferSize, uprFeatures)
+		featuresErr, activatedFeatures := dcp.uprFeed.UprOpenWithFeatures(dcp.connectionName, uint32(0) /*seqno*/, base.UprFeedBufferSize, uprFeatures)
 		if featuresErr != nil {
 			err = featuresErr
 			dcp.Logger().Errorf("Trying to activate UPRFeatures received error code: %v", err.Error())
@@ -1936,8 +1937,8 @@ func (dcp *DcpNozzle) CheckStuckness(dcp_stats base.DcpStatsMapType) error {
 
 func (dcp *DcpNozzle) dcpHasRemainingItemsForXdcr(dcp_stats base.DcpStatsMapType) bool {
 	// Each dcp nozzle has an "items_remaining" stats in stats_map.
-	// An example key for the stats is "eq_dcpq:xdcr:dcp_f58e0727200a19771e4459925908dd66/default/target_10.17.2.102:12000_0:items_remaining"
-	xdcr_items_remaining_key := base.DCP_XDCR_STATS_PREFIX + dcp.Id() + base.DCP_XDCR_ITEMS_REMAINING_SUFFIX
+	// An example key for the stats is "eq_dcpq:xdcr:dcp_f58e0727200a19771e4459925908dd66/default/target_10.17.2.102:12000_0:<randName>:items_remaining"
+	xdcr_items_remaining_key := fmt.Sprint(base.KV_STATS_GROUP_PREFIX_FOR_DCP, dcp.connectionName, base.KV_STATS_SUFFIX_ITEMS_REMAINING)
 
 	kv_nodes, err := dcp.xdcr_topology_svc.MyKVNodes()
 	if err != nil {

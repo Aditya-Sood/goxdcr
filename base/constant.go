@@ -470,9 +470,9 @@ const (
 	HIGH_SEQNO_CONST                   = ":high_seqno"
 	VBUCKET_HIGH_SEQNO_STAT_KEY_FORMAT = VBUCKET_PREFIX + "%v" + HIGH_SEQNO_CONST
 	VBUCKET_UUID_STAT_KEY_FORMAT       = "vb_%v:uuid"
-	DCP_STAT_NAME                      = "dcp"
-	DCP_XDCR_STATS_PREFIX              = "eq_dcpq:xdcr:"
-	DCP_XDCR_ITEMS_REMAINING_SUFFIX    = ":items_remaining"
+	KV_STATS_REQUEST_DCP               = "dcp"
+	KV_STATS_GROUP_PREFIX_FOR_DCP      = "eq_dcpq:"
+	KV_STATS_SUFFIX_ITEMS_REMAINING    = ":items_remaining"
 	VBUCKET_DETAILS_NAME               = "vbucket-details"
 	MAXCAS_CONST                       = ":max_cas"
 	VBUCKET_MAXCAS_STAT_KEY_FORMAT     = VBUCKET_PREFIX + "%v" + MAXCAS_CONST

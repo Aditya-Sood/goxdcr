@@ -257,8 +257,9 @@ func (b *BucketTopologyService) getDcpStatsUpdater(spec *metadata.ReplicationSpe
 				return err
 			}
 
-			stats_map := watcher.objsPool.StringStringPool.Get([]string{base.DCP_STAT_NAME})
-			err = client.StatsMapForSpecifiedStats(base.DCP_STAT_NAME, *stats_map)
+			var dcpStatsMap base.StringStringMap
+			dcpStatsMap, err = client.StatsMap(base.KV_STATS_REQUEST_DCP)
+
 			if err != nil {
 				watcher.logger.Warnf("%v Error getting dcp stats for kv %v. err=%v", userAgent, serverAddr, err)
 				err1 := client.Close()
@@ -267,19 +268,15 @@ func (b *BucketTopologyService) getDcpStatsUpdater(spec *metadata.ReplicationSpe
 				}
 				delete(watcher.kvMemClients, serverAddr)
 				watcher.kvMemClientsMtx.Unlock()
-				watcher.objsPool.StringStringPool.Put(stats_map)
 				watcher.objsPool.DcpStatsMapPool.Put(dcp_stats)
 				return err
-			} else {
-				(*dcp_stats)[serverAddr] = stats_map
 			}
+
+			(*dcp_stats)[serverAddr] = &dcpStatsMap
 		}
 		watcher.kvMemClientsMtx.Unlock()
 		watcher.latestCacheMtx.Lock()
-		replacementNotification := watcher.latestCached.Clone(1).(*Notification)
-		replacementNotification.DcpStatsMap = dcp_stats
-		watcher.latestCached.Recycle()
-		watcher.latestCached = replacementNotification
+		watcher.latestCached.DcpStatsMap = dcp_stats
 		watcher.latestCacheMtx.Unlock()
 		return nil
 	}
@@ -311,9 +308,9 @@ func (b *BucketTopologyService) getDcpStatsLegacyUpdater(spec *metadata.Replicat
 				return err
 			}
 
-			stats_map := watcher.objsPool.StringStringPool.Get([]string{base.DCP_STAT_NAME})
+			var dcpStatsMap base.StringStringMap
+			dcpStatsMap, err = client.StatsMap(base.KV_STATS_REQUEST_DCP)
 
-			err = client.StatsMapForSpecifiedStats(base.DCP_STAT_NAME, *stats_map)
 			if err != nil {
 				watcher.logger.Warnf("%v Error getting dcp stats for kv %v. err=%v", userAgent, serverAddr, err)
 				err1 := client.Close()
@@ -322,12 +319,12 @@ func (b *BucketTopologyService) getDcpStatsLegacyUpdater(spec *metadata.Replicat
 				}
 				delete(watcher.kvMemClientsLegacy, serverAddr)
 				watcher.kvMemClientsLegacyMtx.Unlock()
-				watcher.objsPool.StringStringPool.Put(stats_map)
 				watcher.objsPool.DcpStatsMapPool.Put(dcp_stats)
 				return err
-			} else {
-				(*dcp_stats)[serverAddr] = stats_map
 			}
+
+			(*dcp_stats)[serverAddr] = &dcpStatsMap
+
 			if delaySec := atomic.LoadUint64(&watcher.devDcpStatsLegacyDelay); delaySec > 0 {
 				randFraction := float64(rand.Int()%100) / 100.0 // get a random delay of one second
 				timeToSleep := (time.Duration(int(delaySec)) + time.Duration(randFraction)) * time.Second
@@ -336,10 +333,7 @@ func (b *BucketTopologyService) getDcpStatsLegacyUpdater(spec *metadata.Replicat
 		}
 		watcher.kvMemClientsLegacyMtx.Unlock()
 		watcher.latestCacheMtx.Lock()
-		replacementNotification := watcher.latestCached.Clone(1).(*Notification)
-		replacementNotification.DcpStatsMapLegacy = dcp_stats
-		watcher.latestCached.Recycle()
-		watcher.latestCached = replacementNotification
+		watcher.latestCached.DcpStatsMap = dcp_stats
 		watcher.latestCacheMtx.Unlock()
 		return nil
 	}
@@ -470,23 +464,19 @@ func (b *BucketTopologyService) getLocalBucketTopologyUpdater(spec *metadata.Rep
 			watcher.cachePopulated = true
 			watcher.source = true
 		}
-		replacementNotification := watcher.latestCached.Clone(1).(*Notification)
-		replacementNotification.KvVbMap = serverVBMap
-		replacementNotification.NumberOfSourceNodes = len(*serverVBMap)
-		replacementNotification.SourceVBMap = sourceKvVbMap
-		replacementNotification.SourceReplicasMap = replicasMap
-		replacementNotification.SourceReplicasTranslateMap = translateMap
-		replacementNotification.SourceReplicaCnt = numOfReplicas
-		replacementNotification.SourceVbReplicasMember = vbReplicaMember
-		replacementNotification.SourceStorageBackend = storageBackend
-		replacementNotification.SourceCollectioManifestUid = manifestUid
-		replacementNotification.LocalBucketTopologyUpdateTime = time.Now()
-		replacementNotification.EnableCrossClusterVersioning = crossClusterVer
-		replacementNotification.VersionPruningWindowHrs = pruningWindownHrs
-		replacementNotification.VbucketsMaxCas = vbMaxCas
-
-		watcher.latestCached.Recycle()
-		watcher.latestCached = replacementNotification
+		watcher.latestCached.KvVbMap = serverVBMap
+		watcher.latestCached.NumberOfSourceNodes = len(*serverVBMap)
+		watcher.latestCached.SourceVBMap = sourceKvVbMap
+		watcher.latestCached.SourceReplicasMap = replicasMap
+		watcher.latestCached.SourceReplicasTranslateMap = translateMap
+		watcher.latestCached.SourceReplicaCnt = numOfReplicas
+		watcher.latestCached.SourceVbReplicasMember = vbReplicaMember
+		watcher.latestCached.SourceStorageBackend = storageBackend
+		watcher.latestCached.SourceCollectioManifestUid = manifestUid
+		watcher.latestCached.LocalBucketTopologyUpdateTime = time.Now()
+		watcher.latestCached.EnableCrossClusterVersioning = crossClusterVer
+		watcher.latestCached.VersionPruningWindowHrs = pruningWindownHrs
+		watcher.latestCached.VbucketsMaxCas = vbMaxCas
 		watcher.latestCacheMtx.Unlock()
 		return nil
 	}
@@ -556,10 +546,7 @@ func (b *BucketTopologyService) getRemoteMaxCasUpdater(maxCasGetter service_def.
 		}
 
 		watcher.latestCacheMtx.Lock()
-		replacementNotification := watcher.latestCached.Clone(1).(*Notification)
-		replacementNotification.MaxVbCasStatsMap = &maxCasMap
-		watcher.latestCached.Recycle()
-		watcher.latestCached = replacementNotification
+		watcher.latestCached.MaxVbCasStatsMap = &maxCasMap
 		watcher.latestCacheMtx.Unlock()
 		return nil
 	}
@@ -617,18 +604,15 @@ func (b *BucketTopologyService) getRemoteTopologyUpdateFunc(spec *metadata.Repli
 		}
 
 		watcher.latestCacheMtx.Lock()
-		replacementNotification := watcher.latestCached.Clone(1).(*Notification)
-		replacementNotification.TargetServerVBMap = (*base.KvVBMapType)(&targetServerVBMap)
-		replacementNotification.TargetBucketUUID = targetBucketUUID
-		replacementNotification.TargetBucketInfo = (base.BucketInfoMapType)(targetBucketInfo)
-		replacementNotification.TargetReplicasMap = replicasMap
-		replacementNotification.TargetReplicasTranslateMap = translateMap
-		replacementNotification.TargetReplicaCnt = numOfReplicas
-		replacementNotification.TargetVbReplicasMember = vbReplicaMember
-		replacementNotification.TargetStorageBackend = storageBackend
-		replacementNotification.VersionPruningWindowHrs = VersionPruningWindowHrs
-		watcher.latestCached.Recycle()
-		watcher.latestCached = replacementNotification
+		watcher.latestCached.TargetServerVBMap = (*base.KvVBMapType)(&targetServerVBMap)
+		watcher.latestCached.TargetBucketUUID = targetBucketUUID
+		watcher.latestCached.TargetBucketInfo = (base.BucketInfoMapType)(targetBucketInfo)
+		watcher.latestCached.TargetReplicasMap = replicasMap
+		watcher.latestCached.TargetReplicasTranslateMap = translateMap
+		watcher.latestCached.TargetReplicaCnt = numOfReplicas
+		watcher.latestCached.TargetVbReplicasMember = vbReplicaMember
+		watcher.latestCached.TargetStorageBackend = storageBackend
+		watcher.latestCached.VersionPruningWindowHrs = VersionPruningWindowHrs
 		if !watcher.cachePopulated {
 			watcher.cachePopulated = true
 		}
@@ -976,14 +960,11 @@ func (b *BucketTopologyService) getHighSeqnosUpdater(spec *metadata.ReplicationS
 		watcher.kvMemClientsMtx.Unlock()
 
 		watcher.latestCacheMtx.Lock()
-		replacementNotification := watcher.latestCached.Clone(1).(*Notification)
 		if legacyMode {
-			replacementNotification.HighSeqnoMapLegacy = highseqno_map
+			watcher.latestCached.HighSeqnoMapLegacy = highseqno_map
 		} else {
-			replacementNotification.HighSeqnoMap = highseqno_map
+			watcher.latestCached.HighSeqnoMap = highseqno_map
 		}
-		watcher.latestCached.Recycle()
-		watcher.latestCached = replacementNotification
 		watcher.latestCacheMtx.Unlock()
 		return nil
 	}
@@ -1072,10 +1053,7 @@ func (b *BucketTopologyService) getMaxCasUpdater(spec *metadata.ReplicationSpeci
 		watcher.kvMemClientsMtx.Unlock()
 
 		watcher.latestCacheMtx.Lock()
-		replacementNotification := watcher.latestCached.Clone(1).(*Notification)
-		replacementNotification.MaxVbCasStatsMap = &nodesMaxCasMap
-		watcher.latestCached.Recycle()
-		watcher.latestCached = replacementNotification
+		watcher.latestCached.MaxVbCasStatsMap = &nodesMaxCasMap
 		watcher.latestCacheMtx.Unlock()
 		return nil
 	}

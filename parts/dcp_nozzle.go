@@ -1956,6 +1956,7 @@ func (dcp *DcpNozzle) dcpHasRemainingItemsForXdcr(dcp_stats base.DcpStatsMapType
 					dcp.Logger().Errorf("%v Items remaining stats, %v, is not of integer type.", dcp.Id(), items_remaining_stats_str)
 					continue
 				}
+				dcp.Logger().Infof("found DCP stats for the node: (%v, %v)", xdcr_items_remaining_key, items_remaining_stats_int)
 				if items_remaining_stats_int > 0 {
 					return true
 				}

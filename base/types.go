@@ -2419,11 +2419,11 @@ func (t *DcpStatsMapType) GreenClone(dcpStatsPool func(keys []string) *DcpStatsM
 		if vMap == nil {
 			(*recycledMap)[key] = nil
 		} else {
-			recycledStrStr := make(StringStringMap)
+			recycledStrStr := strStrPool(GetKeysListFromStrStrMap(*vMap))
 			for key2, val2 := range *vMap {
-				recycledStrStr[key2] = val2
+				(*recycledStrStr)[key2] = val2
 			}
-			(*recycledMap)[key] = &recycledStrStr
+			(*recycledMap)[key] = recycledStrStr
 		}
 	}
 	return recycledMap

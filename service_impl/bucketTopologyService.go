@@ -257,8 +257,14 @@ func (b *BucketTopologyService) getDcpStatsUpdater(spec *metadata.ReplicationSpe
 				return err
 			}
 
+			if _, err := client.EnableFeatures([]mcc.Feature{mcc.FeatureDataType}); err != nil {
+				return err
+			}
+			filterBody := fmt.Sprintf(base.KV_STATS_REQUEST_DCP_FILTER_BODY, base.CB_INTERNAL_USER_FOR_XDCR)
+			suffixes := []string{base.KV_STATS_SUFFIX_ITEMS_REMAINING}
+
 			var dcpStatsMap base.StringStringMap
-			dcpStatsMap, err = client.StatsMap(base.KV_STATS_REQUEST_DCP)
+			dcpStatsMap, err = client.StatsMapWithSpecifiedSuffix(base.KV_STATS_REQUEST_DCP, suffixes, &mcc.StatsParams{Body: []byte(filterBody), DataType: base.JSONDataType})
 
 			if err != nil {
 				watcher.logger.Warnf("%v Error getting dcp stats for kv %v. err=%v", userAgent, serverAddr, err)

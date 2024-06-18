@@ -60,6 +60,9 @@ func (f *HELOFeatures) NumberOfActivatedFeatures() int {
 	if f.Xerror {
 		result++
 	}
+	if f.Json {
+		result++
+	}
 	return result
 }
 
@@ -719,6 +722,10 @@ func (u *Utilities) SendHELOWithFeatures(client mcc.ClientIface, userAgent strin
 		clientFeatureSet = append(clientFeatureSet, mcc.FeatureCollections)
 	}
 
+	if requestedFeatures.Json {
+		clientFeatureSet = append(clientFeatureSet, mcc.FeatureDataType)
+	}
+
 	client.SetConnName(userAgent)
 	response, err := client.EnableFeatures(clientFeatureSet)
 
@@ -754,6 +761,9 @@ func (u *Utilities) SendHELOWithFeatures(client mcc.ClientIface, userAgent strin
 			}
 			if feature == base.HELO_FEATURE_COLLECTIONS {
 				respondedFeatures.Collections = true
+			}
+			if feature == base.HELO_FEATURE_JSON {
+				respondedFeatures.Json = true
 			}
 			pos += 2
 		}
@@ -807,6 +817,12 @@ func (u *Utilities) ComposeHELORequest(userAgent string, features HELOFeatures) 
 	// Xerror
 	if features.Xerror {
 		binary.BigEndian.PutUint16(value[sliceIndex:sliceIndex+base.HELO_BYTES_PER_FEATURE], base.HELO_FEATURE_XERROR)
+		sliceIndex += base.HELO_BYTES_PER_FEATURE
+	}
+
+	// Json, previously Datatype
+	if features.Json {
+		binary.BigEndian.PutUint16(value[sliceIndex:sliceIndex+base.HELO_BYTES_PER_FEATURE], base.HELO_FEATURE_JSON)
 		sliceIndex += base.HELO_BYTES_PER_FEATURE
 	}
 

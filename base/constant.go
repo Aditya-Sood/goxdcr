@@ -18,6 +18,7 @@ import (
 	"time"
 
 	mc "github.com/couchbase/gomemcached"
+	mcc "github.com/couchbase/gomemcached/client"
 )
 
 //constants
@@ -470,7 +471,9 @@ const (
 	HIGH_SEQNO_CONST                   = ":high_seqno"
 	VBUCKET_HIGH_SEQNO_STAT_KEY_FORMAT = VBUCKET_PREFIX + "%v" + HIGH_SEQNO_CONST
 	VBUCKET_UUID_STAT_KEY_FORMAT       = "vb_%v:uuid"
+	CB_INTERNAL_USER_FOR_XDCR          = "@goxdcr" // assigned by the 'Default Authenticator' of cbauth
 	KV_STATS_REQUEST_DCP               = "dcp"
+	KV_STATS_REQUEST_DCP_FILTER_BODY   = "{\"stream_format\":\"skip\",\"filter\":{\"user\":\"%v\"}}"
 	KV_STATS_GROUP_PREFIX_FOR_DCP      = "eq_dcpq:"
 	KV_STATS_SUFFIX_ITEMS_REMAINING    = ":items_remaining"
 	VBUCKET_DETAILS_NAME               = "vbucket-details"
@@ -786,6 +789,9 @@ var HELO_FEATURE_SNAPPY uint16 = 0x0a
 
 // value representing XERROR
 var HELO_FEATURE_XERROR uint16 = 0x07
+
+// value representing JSON (previously DATATYPE)
+var HELO_FEATURE_JSON uint16 = uint16(mcc.FeatureDataType)
 
 // new XATTR bit in data type field in dcp mutations
 var PROTOCOL_BINARY_DATATYPE_XATTR uint8 = 0x04

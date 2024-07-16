@@ -1806,6 +1806,8 @@ func IsCasPoisoningPreCheckEnabled() bool {
 }
 
 var SrcHeartbeatExpirationTimeout = 3 * time.Minute
-var SrcHeartbeatCooldownPeriod = 30 * time.Second
+
+// var SrcHeartbeatCooldownPeriod = 30 * time.Second
+var SrcHeartbeatCooldownPeriod = 15 * time.Second
 
 const XDCRSourceClustersPath = XDCRPrefix + "/sourceClusters"
